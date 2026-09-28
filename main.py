@@ -9,8 +9,7 @@ ALLOWED_USER_ID = os.environ.get("ALLOWED_USER_ID", "")
 
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
-    api_key=NVIDIA_KEY,
-    proxies=None
+    api_key=NVIDIA_KEY
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
