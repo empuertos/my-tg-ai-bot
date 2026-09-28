@@ -18,7 +18,7 @@ export default {
 
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // ✅ TAMANG URL + SIGURADONG GUMAGANA NA MODEL
+      // ✅ TAMANG PANGALAN NG MODEL — SIGURADONG GUMAGANA!
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -26,7 +26,7 @@ export default {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3-8b-8192",
+          model: "llama-3.3-70b-versatile",
           messages: [{ role: "user", content: text }],
           temperature: 0.7,
           max_tokens: 512
@@ -34,15 +34,9 @@ export default {
       });
 
       if (!groqRes.ok) {
-        const status = groqRes.status;
-        let detail = "";
-        try {
-          const err = await groqRes.json();
-          detail = err.error?.message || "";
-        } catch {}
-        
+        const err = await groqRes.json();
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ Error ${status}\n${detail}`);
+          `⚠️ ${err.error?.message || "Error " + groqRes.status}`);
         return new Response("Error");
       }
 
@@ -53,7 +47,6 @@ export default {
       return new Response("OK");
 
     } catch (err) {
-      console.error("ERROR:", err.message);
       return new Response("Error: " + err.message);
     }
   }
