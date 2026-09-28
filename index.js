@@ -11,16 +11,16 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
-      // /start — works fine
+      // /start command
       if (text === "/start") {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
         return new Response("OK");
       }
 
-      // Show typing...
+      // Typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // Call NVIDIA API
+      // Tawagin ang NVIDIA API
       const nvidiaRes = await fetch(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         {
@@ -38,22 +38,15 @@ export default {
         }
       );
 
-      // SHOW EXACT ERROR TO YOU IN TELEGRAM!
+      // May error ba sa NVIDIA? Ipakita sa Telegram!
       if (!nvidiaRes.ok) {
-        const status = nvidiaRes.status;
-        let detail = "";
-        try {
-          const err = await nvidiaRes.json();
-          detail = err.error?.message || "";
-        } catch {}
-        
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `❌ NVIDIA Error ${status}\n\n${detail}\n\nCheck your NVIDIA API Key!`);
+          `⚠️ NVIDIA Error: ${nvidiaRes.status}\n\nI-check ang NVIDIA API Key mo!`);
         return new Response("Error");
       }
 
       const data = await nvidiaRes.json();
-      const reply = data.choices?.[0]?.message?.content || "No reply.";
+      const reply = data.choices?.[0]?.message?.content || "Walang sagot.";
       
       await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, reply);
       return new Response("OK");
