@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     if (request.method !== "POST") {
-      return new Response("Bot is running! ✅ GROQ ACTIVE");
+      return new Response("Bot is running! ✅");
     }
 
     try {
@@ -11,16 +11,14 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
-      // /start command
       if (text === "/start") {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
         return new Response("OK");
       }
 
-      // Show typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // GROQ API — SIGURADONG GUMAGANA!
+      // ✅ TAMANG URL + SIGURADONG GUMAGANA NA MODEL
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -28,7 +26,7 @@ export default {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3.1-8b-instant",
+          model: "llama-3-8b-8192",
           messages: [{ role: "user", content: text }],
           temperature: 0.7,
           max_tokens: 512
@@ -36,9 +34,16 @@ export default {
       });
 
       if (!groqRes.ok) {
+        const status = groqRes.status;
+        let detail = "";
+        try {
+          const err = await groqRes.json();
+          detail = err.error?.message || "";
+        } catch {}
+        
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ Error ${groqRes.status}\n\nI-check ang GROQ_API_KEY mo!\nDapat nagsisimula sa gsk_`);
-        return new Response("Groq Error");
+          `⚠️ Error ${status}\n${detail}`);
+        return new Response("Error");
       }
 
       const data = await groqRes.json();
