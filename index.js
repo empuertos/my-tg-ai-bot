@@ -1,77 +1,26 @@
 export default {
   async fetch(request, env) {
-    // CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
-      });
-    }
-
-    // Health check
     if (request.method !== "POST") {
-      return new Response("✅ Bot is running! Webhook active.");
+      return new Response("Bot is running! ✅");
     }
 
     try {
-      // ✅ Fix: Read body properly
-      let bodyText;
-      try {
-        bodyText = await request.text();
-      } catch (e) {
-        return new Response("❌ Cannot read body", { status: 400 });
-      }
+      const update = await request.json();
+      const chatId = update.message?.chat?.id;
+      const text = update.message?.text;
 
-      if (!bodyText || bodyText.trim() === "") {
-        return new Response("Empty body — OK", { status: 200 });
-      }
+      if (!chatId || !text) return new Response("OK");
 
-      // ✅ Parse safely
-      let update;
-      try {
-        update = JSON.parse(bodyText);
-      } catch (parseErr) {
-        console.error("JSON parse error:", parseErr.message);
-        return new Response("Invalid JSON — OK", { status: 200 });
-      }
-
-      const chatId = update?.message?.chat?.id;
-      const text = update?.message?.text;
-
-      if (!chatId || !text) {
-        return new Response("No message data — OK", { status: 200 });
-      }
-
-      // ✅ ALLOWED check — remove if not needed!
-      const userId = update?.message?.from?.id;
-      const allowed = env.ALLOWED_USER_ID;
-      if (allowed && userId?.toString() !== allowed) {
-        await tg(env.TELEGRAM_BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "❌ Not authorized"
-        });
-        return new Response("Forbidden", { status: 200 });
-      }
-
-      // /start
+      // /start command — WORKS ✅
       if (text === "/start") {
-        await tg(env.TELEGRAM_BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: "👋 Hello! Send me a message!"
-        });
-        return new Response("OK — start sent");
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
+        return new Response("OK");
       }
 
-      // Typing indicator
-      await tg(env.TELEGRAM_BOT_TOKEN, "sendChatAction", {
-        chat_id: chatId,
-        action: "typing"
-      });
+      // Show typing...
+      await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // NVIDIA API
+      // CALL NVIDIA API
       const nvidiaRes = await fetch(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         {
@@ -89,43 +38,47 @@ export default {
         }
       );
 
+      // IF NVIDIA FAILS — TELL US EXACTLY WHY!
       if (!nvidiaRes.ok) {
-        const errText = await nvidiaRes.text();
-        await tg(env.TELEGRAM_BOT_TOKEN, "sendMessage", {
-          chat_id: chatId,
-          text: `⚠️ NVIDIA Error: ${nvidiaRes.status}`
-        });
-        return new Response(`NVIDIA error: ${nvidiaRes.status}`);
+        const errStatus = nvidiaRes.status;
+        let errMsg = "";
+        
+        try {
+          const errData = await nvidiaRes.json();
+          errMsg = errData.error?.message || "";
+        } catch {}
+
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
+          `⚠️ NVIDIA Error ${errStatus}\n\nCheck your NVIDIA API Key!`);
+        return new Response("NVIDIA Error");
       }
 
+      // SUCCESS — GET REPLY
       const data = await nvidiaRes.json();
-      const reply = data?.choices?.[0]?.message?.content || "No reply received.";
-
-      // Send reply
-      await tg(env.TELEGRAM_BOT_TOKEN, "sendMessage", {
-        chat_id: chatId,
-        text: reply
-      });
-
-      return new Response("✅ Reply sent");
+      const reply = data.choices?.[0]?.message?.content || "No reply.";
+      
+      await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, reply);
+      return new Response("OK");
 
     } catch (err) {
-      console.error("❌ ERROR:", err.message);
-      return new Response(`Error: ${err.message}`, { status: 200 });
+      console.error("ERROR:", err.message);
+      return new Response("Error: " + err.message);
     }
   }
 };
 
-// ✅ Safe Telegram sender function
-async function tg(token, method, body) {
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+async function sendMsg(token, chatId, text) {
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ chat_id: chatId, text })
   });
-  
-  if (!res.ok) {
-    const errData = await res.json();
-    console.error("Telegram error:", errData);
-  }
+}
+
+async function sendAction(token, chatId, action) {
+  await fetch(`https://api.telegram.org/bot${token}/sendChatAction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, action })
+  });
 }
