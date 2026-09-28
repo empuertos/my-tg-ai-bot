@@ -1,7 +1,13 @@
 import os
 import requests
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes
+)
 
 NVIDIA_KEY = os.environ.get("NVIDIA_API_KEY")
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
