@@ -1,5 +1,4 @@
 import os
-import asyncio
 from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes
@@ -10,7 +9,8 @@ ALLOWED_USER_ID = os.environ.get("ALLOWED_USER_ID", "")
 
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
-    api_key=NVIDIA_KEY
+    api_key=NVIDIA_KEY,
+    proxies=None
 )
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
