@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     if (request.method !== "POST") {
-      return new Response("Bot is running! ✅");
+      return new Response("Bot is running! ✅ GROQ ACTIVE");
     }
 
     try {
@@ -20,7 +20,7 @@ export default {
       // Show typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // ✅ GROQ — mabilis at siguradong gagana!
+      // GROQ API — SIGURADONG GUMAGANA!
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -37,8 +37,8 @@ export default {
 
       if (!groqRes.ok) {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ Error: ${groqRes.status}\nI-check ang Groq API Key mo!`);
-        return new Response("Error");
+          `⚠️ Error ${groqRes.status}\n\nI-check ang GROQ_API_KEY mo!\nDapat nagsisimula sa gsk_`);
+        return new Response("Groq Error");
       }
 
       const data = await groqRes.json();
