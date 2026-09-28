@@ -18,51 +18,38 @@ export default {
 
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // ✅ Use WORKING model names — try one by one
-      const models = [
-        "meta/llama-3.2-1b-instruct",
-        "meta/llama-3.2-3b-instruct",
-        "mistralai/mistral-7b-instruct-v0.3"
-      ];
-
-      let reply = null;
-      let lastError = null;
-
-      for (const model of models) {
-        try {
-          const nvidiaRes = await fetch(
-            "https://integrate.api.nvidia.com/v1/chat/completions",
-            {
-              method: "POST",
-              headers: {
-                "Authorization": `Bearer ${env.NVIDIA_API_KEY}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                model: model,
-                messages: [{ role: "user", content: text }],
-                temperature: 0.7,
-                max_tokens: 512
-              })
-            }
-          );
-
-          if (nvidiaRes.ok) {
-            const data = await nvidiaRes.json();
-            reply = data.choices?.[0]?.message?.content;
-            console.log("✅ Working model:", model);
-            break;
-          }
-        } catch (e) {
-          lastError = e;
+      // ✅ GAMITIN ANG MODEL NA NAKITA MO SA SCREENSHOT!
+      const nvidiaRes = await fetch(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${env.NVIDIA_API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "deepseek-ai/deepseek-v4.1-flash",
+            messages: [{ role: "user", content: text }],
+            temperature: 0.7,
+            max_tokens: 512
+          })
         }
+      );
+
+      if (!nvidiaRes.ok) {
+        const status = nvidiaRes.status;
+        let errMsg = "";
+        try {
+          const err = await nvidiaRes.json();
+          errMsg = err.error?.message || "";
+        } catch {}
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
+          `⚠️ Error ${status}\n${errMsg}`);
+        return new Response("Error");
       }
 
-      if (!reply) {
-        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          "⚠️ All models busy. Try again in a minute.");
-        return new Response("No model available");
-      }
+      const data = await nvidiaRes.json();
+      const reply = data.choices?.[0]?.message?.content || "No reply.";
       
       await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, reply);
       return new Response("OK");
