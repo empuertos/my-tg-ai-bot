@@ -1,25 +1,26 @@
 import os
+import asyncio
 from openai import OpenAI
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes
 
 NVIDIA_KEY = os.environ.get("NVIDIA_API_KEY")
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-ALLOWED_USER_ID = int(os.environ.get("ALLOWED_USER_ID", "0"))
+ALLOWED_USER_ID = os.environ.get("ALLOWED_USER_ID", "")
 
 client = OpenAI(
     base_url="https://integrate.api.nvidia.com/v1",
     api_key=NVIDIA_KEY
 )
 
-async def start(update: Update, context):
-    if ALLOWED_USER_ID and update.effective_user.id != ALLOWED_USER_ID:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if ALLOWED_USER_ID and str(update.effective_user.id) != ALLOWED_USER_ID:
         await update.message.reply_text("❌ Sariling gamit lang ito!")
         return
     await update.message.reply_text("👋 Kumusta! Mag-type ka lang — sasagot ako!")
 
-async def chat(update: Update, context):
-    if ALLOWED_USER_ID and update.effective_user.id != ALLOWED_USER_ID:
+async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if ALLOWED_USER_ID and str(update.effective_user.id) != ALLOWED_USER_ID:
         return
     
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
