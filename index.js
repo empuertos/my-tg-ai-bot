@@ -11,7 +11,7 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
-      // /start command — WORKS ✅
+      // /start — works fine
       if (text === "/start") {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
         return new Response("OK");
@@ -20,7 +20,7 @@ export default {
       // Show typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // CALL NVIDIA API
+      // Call NVIDIA API
       const nvidiaRes = await fetch(
         "https://integrate.api.nvidia.com/v1/chat/completions",
         {
@@ -38,22 +38,20 @@ export default {
         }
       );
 
-      // IF NVIDIA FAILS — TELL US EXACTLY WHY!
+      // SHOW EXACT ERROR TO YOU IN TELEGRAM!
       if (!nvidiaRes.ok) {
-        const errStatus = nvidiaRes.status;
-        let errMsg = "";
-        
+        const status = nvidiaRes.status;
+        let detail = "";
         try {
-          const errData = await nvidiaRes.json();
-          errMsg = errData.error?.message || "";
+          const err = await nvidiaRes.json();
+          detail = err.error?.message || "";
         } catch {}
-
+        
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ NVIDIA Error ${errStatus}\n\nCheck your NVIDIA API Key!`);
-        return new Response("NVIDIA Error");
+          `❌ NVIDIA Error ${status}\n\n${detail}\n\nCheck your NVIDIA API Key!`);
+        return new Response("Error");
       }
 
-      // SUCCESS — GET REPLY
       const data = await nvidiaRes.json();
       const reply = data.choices?.[0]?.message?.content || "No reply.";
       
