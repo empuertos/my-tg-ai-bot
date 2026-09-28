@@ -11,44 +11,37 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
+      // /start command
       if (text === "/start") {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
         return new Response("OK");
       }
 
+      // Show typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // ✅ GAMITIN ANG MODEL NA NAKITA MO SA SCREENSHOT!
-      const nvidiaRes = await fetch(
-        "https://integrate.api.nvidia.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.NVIDIA_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "deepseek-ai/deepseek-v4.1-flash",
-            messages: [{ role: "user", content: text }],
-            temperature: 0.7,
-            max_tokens: 512
-          })
-        }
-      );
+      // ✅ GROQ — mabilis at siguradong gagana!
+      const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          messages: [{ role: "user", content: text }],
+          temperature: 0.7,
+          max_tokens: 512
+        })
+      });
 
-      if (!nvidiaRes.ok) {
-        const status = nvidiaRes.status;
-        let errMsg = "";
-        try {
-          const err = await nvidiaRes.json();
-          errMsg = err.error?.message || "";
-        } catch {}
+      if (!groqRes.ok) {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ Error ${status}\n${errMsg}`);
+          `⚠️ Error: ${groqRes.status}\nI-check ang Groq API Key mo!`);
         return new Response("Error");
       }
 
-      const data = await nvidiaRes.json();
+      const data = await groqRes.json();
       const reply = data.choices?.[0]?.message?.content || "No reply.";
       
       await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, reply);
