@@ -18,7 +18,7 @@ export default {
 
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // ✅ TAMANG PANGALAN NG MODEL — SIGURADONG GUMAGANA!
+      // ✅ LIBRE PA RIN SA GROQ NGAYON!
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -26,7 +26,7 @@ export default {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
+          model: "openai/gpt-oss-20b",
           messages: [{ role: "user", content: text }],
           temperature: 0.7,
           max_tokens: 512
