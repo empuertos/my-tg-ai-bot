@@ -1,4 +1,5 @@
 import os
+import httpx
 from openai import OpenAI
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes
@@ -7,6 +8,7 @@ NVIDIA_KEY = os.environ.get("NVIDIA_API_KEY")
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 ALLOWED_USER_ID = os.environ.get("ALLOWED_USER_ID", "")
 
+# ✅ Walang 'proxies' — direkta na!
 client = OpenAI(
     api_key=NVIDIA_KEY,
     base_url="https://integrate.api.nvidia.com/v1"
