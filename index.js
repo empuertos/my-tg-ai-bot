@@ -11,10 +11,11 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
-      // ALLOWED check — leave empty to allow all
+      // ALLOWED USER — leave empty to allow all
       const userId = update.message?.from?.id;
       const allowed = env.ALLOWED_USER_ID;
       if (allowed && userId?.toString() !== allowed) {
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "❌ Not authorized");
         return new Response("Forbidden", { status: 403 });
       }
 
@@ -47,8 +48,8 @@ export default {
 
       if (!nvidiaRes.ok) {
         const err = await nvidiaRes.text();
-        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `❌ NVIDIA Error: ${nvidiaRes.status}`);
-        return new Response("Error");
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, `❌ Error ${nvidiaRes.status}`);
+        return new Response("NVIDIA Error");
       }
 
       const data = await nvidiaRes.json();
