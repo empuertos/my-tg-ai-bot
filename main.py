@@ -7,10 +7,8 @@ NVIDIA_KEY = os.environ.get("NVIDIA_API_KEY")
 TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 ALLOWED_USER_ID = os.environ.get("ALLOWED_USER_ID", "")
 
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=NVIDIA_KEY
-)
+client = OpenAI(api_key=NVIDIA_KEY)
+client.base_url = "https://integrate.api.nvidia.com/v1"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if ALLOWED_USER_ID and str(update.effective_user.id) != ALLOWED_USER_ID:
