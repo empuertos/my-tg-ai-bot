@@ -11,42 +11,58 @@ export default {
 
       if (!chatId || !text) return new Response("OK");
 
-      // /start command
       if (text === "/start") {
         await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, "👋 Hello! Send me a message!");
         return new Response("OK");
       }
 
-      // Typing...
       await sendAction(env.TELEGRAM_BOT_TOKEN, chatId, "typing");
 
-      // Tawagin ang NVIDIA API
-      const nvidiaRes = await fetch(
-        "https://integrate.api.nvidia.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.NVIDIA_API_KEY}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "meta/llama-3.1-8b-instruct",
-            messages: [{ role: "user", content: text }],
-            temperature: 0.7,
-            max_tokens: 512
-          })
-        }
-      );
+      // ✅ Use WORKING model names — try one by one
+      const models = [
+        "meta/llama-3.2-1b-instruct",
+        "meta/llama-3.2-3b-instruct",
+        "mistralai/mistral-7b-instruct-v0.3"
+      ];
 
-      // May error ba sa NVIDIA? Ipakita sa Telegram!
-      if (!nvidiaRes.ok) {
-        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
-          `⚠️ NVIDIA Error: ${nvidiaRes.status}\n\nI-check ang NVIDIA API Key mo!`);
-        return new Response("Error");
+      let reply = null;
+      let lastError = null;
+
+      for (const model of models) {
+        try {
+          const nvidiaRes = await fetch(
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${env.NVIDIA_API_KEY}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [{ role: "user", content: text }],
+                temperature: 0.7,
+                max_tokens: 512
+              })
+            }
+          );
+
+          if (nvidiaRes.ok) {
+            const data = await nvidiaRes.json();
+            reply = data.choices?.[0]?.message?.content;
+            console.log("✅ Working model:", model);
+            break;
+          }
+        } catch (e) {
+          lastError = e;
+        }
       }
 
-      const data = await nvidiaRes.json();
-      const reply = data.choices?.[0]?.message?.content || "Walang sagot.";
+      if (!reply) {
+        await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, 
+          "⚠️ All models busy. Try again in a minute.");
+        return new Response("No model available");
+      }
       
       await sendMsg(env.TELEGRAM_BOT_TOKEN, chatId, reply);
       return new Response("OK");
